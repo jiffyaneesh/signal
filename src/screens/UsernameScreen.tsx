@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Body, Display, Label, SignalButton } from '../components/ui';
+import { Body, Display, Label, SignalButton, TextField } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { colors, fonts, radius, space } from '../theme';
+import { colors, space } from '../theme';
 
 // Shown when authenticated but no username row exists yet. Creates the
 // public.users row, then refreshes the profile to enter the app.
@@ -55,25 +55,13 @@ export default function UsernameScreen() {
           </View>
 
           <View style={{ gap: 16 }}>
-            <TextInput
+            <TextField
               placeholder="USERNAME"
-              placeholderTextColor={colors.onSurfaceVariant}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
               maxLength={20}
-              style={{
-                borderWidth: 2,
-                borderColor: colors.ink,
-                borderRadius: radius.md,
-                paddingHorizontal: 20,
-                paddingVertical: 18,
-                fontFamily: fonts.mono,
-                fontSize: 16,
-                letterSpacing: 1.5,
-                color: colors.ink,
-              }}
             />
             {error && <Body style={{ color: colors.error }}>{error}</Body>}
             <SignalButton label={busy ? 'SAVING…' : 'CLAIM IT'} onPress={save} disabled={busy} />

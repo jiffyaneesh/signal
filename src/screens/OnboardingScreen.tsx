@@ -1,16 +1,15 @@
-import { type ComponentProps, useState } from "react";
+import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Body, Display, Label, SignalButton } from "../components/ui";
+import { Body, Display, Label, SignalButton, TextField } from "../components/ui";
 import { supabase } from "../lib/supabase";
-import { colors, fonts, radius, space } from "../theme";
+import { colors, space } from "../theme";
 
 // Welcome + auth. Email/password sign up or log in. On success, AuthContext
 // flips the navigator; new users with no username land on the Username step.
@@ -65,7 +64,7 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={{ gap: 16 }}>
-            <Field
+            <TextField
               placeholder="EMAIL"
               value={email}
               onChangeText={setEmail}
@@ -73,7 +72,7 @@ export default function OnboardingScreen() {
               autoCapitalize="none"
               autoComplete="email"
             />
-            <Field
+            <TextField
               placeholder="PASSWORD"
               value={password}
               onChangeText={setPassword}
@@ -112,26 +111,5 @@ export default function OnboardingScreen() {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-// Enclosed input with a 2px ink border and bold mono placeholder (no ghost text).
-function Field(props: ComponentProps<typeof TextInput>) {
-  return (
-    <TextInput
-      placeholderTextColor={colors.onSurfaceVariant}
-      style={{
-        borderWidth: 2,
-        borderColor: colors.ink,
-        borderRadius: radius.md,
-        paddingHorizontal: 20,
-        paddingVertical: 18,
-        fontFamily: fonts.mono,
-        fontSize: 14,
-        letterSpacing: 1,
-        color: colors.ink,
-      }}
-      {...props}
-    />
   );
 }

@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import {
   Modal,
   Pressable,
   Text,
+  TextInput,
   View,
   type StyleProp,
   type TextStyle,
@@ -321,6 +323,67 @@ export function Segmented<T extends string = string>({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+// Enclosed text input — 2px ink border, mono text, bold-caps placeholder. The
+// border thickens + gains the brutalist offset shadow on focus (inputs were
+// otherwise flat/bland). Pass `secureTextEntry` and it grows a show/hide eye
+// toggle on the right; the toggle overrides secureTextEntry internally so the
+// caller doesn't manage reveal state. All other TextInput props pass through.
+export function TextField({
+  secureTextEntry,
+  style,
+  onFocus,
+  onBlur,
+  ...rest
+}: ComponentProps<typeof TextInput>) {
+  const [focused, setFocused] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const isSecure = !!secureTextEntry;
+
+  return (
+    <View
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderWidth: 2,
+          borderColor: colors.ink,
+          borderRadius: radius.md,
+          backgroundColor: colors.canvas,
+          paddingHorizontal: 20,
+        },
+        focused ? brutalistShadow : null,
+      ]}>
+      <TextInput
+        placeholderTextColor={colors.onSurfaceVariant}
+        secureTextEntry={isSecure && !revealed}
+        onFocus={(e) => { setFocused(true); onFocus?.(e); }}
+        onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+        style={[
+          {
+            flex: 1,
+            paddingVertical: 18,
+            fontFamily: fonts.mono,
+            fontSize: 14,
+            letterSpacing: 1,
+            color: colors.ink,
+          },
+          style,
+        ]}
+        {...rest}
+      />
+      {isSecure && (
+        <Pressable
+          onPress={() => setRevealed((r) => !r)}
+          hitSlop={10}
+          accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+          style={{ paddingLeft: 12 }}>
+          <Ionicons name={revealed ? 'eye-off' : 'eye'} size={20} color={colors.onSurfaceVariant} />
+        </Pressable>
+      )}
     </View>
   );
 }

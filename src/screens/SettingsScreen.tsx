@@ -1,12 +1,12 @@
 import { useRouter } from 'expo-router';
-import { type ComponentProps, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Body, ConfirmModal, Headline, IconButton, Label, Rule, SecondaryButton } from '../components/ui';
+import { Body, ConfirmModal, Headline, IconButton, Label, Rule, SecondaryButton, TextField } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { deleteOwnAccount, updatePassword, updateUsername } from '../lib/account';
-import { colors, fonts, radius, space } from '../theme';
+import { colors, space } from '../theme';
 
 // Account settings: change username, change password, log out, delete account.
 // Each section is self-contained with its own inline status. Layout follows the
@@ -108,7 +108,7 @@ export default function SettingsScreen() {
           {/* USERNAME */}
           <View style={{ gap: 16 }}>
             <Headline style={{ fontSize: 22 }}>USERNAME</Headline>
-            <Field
+            <TextField
               placeholder="USERNAME"
               value={username}
               onChangeText={(t) => { setUsername(t); setNameMsg(null); setNameErr(null); }}
@@ -130,14 +130,14 @@ export default function SettingsScreen() {
           {/* PASSWORD */}
           <View style={{ gap: 16 }}>
             <Headline style={{ fontSize: 22 }}>PASSWORD</Headline>
-            <Field
+            <TextField
               placeholder="NEW PASSWORD"
               value={pw}
               onChangeText={(t) => { setPw(t); setPwMsg(null); setPwErr(null); }}
               secureTextEntry
               autoCapitalize="none"
             />
-            <Field
+            <TextField
               placeholder="CONFIRM PASSWORD"
               value={pw2}
               onChangeText={(t) => { setPw2(t); setPwMsg(null); setPwErr(null); }}
@@ -193,26 +193,5 @@ export default function SettingsScreen() {
         onCancel={() => setConfirmDelete(false)}
       />
     </SafeAreaView>
-  );
-}
-
-// Enclosed input matching the onboarding / username fields.
-function Field(props: ComponentProps<typeof TextInput>) {
-  return (
-    <TextInput
-      placeholderTextColor={colors.onSurfaceVariant}
-      style={{
-        borderWidth: 2,
-        borderColor: colors.ink,
-        borderRadius: radius.md,
-        paddingHorizontal: 20,
-        paddingVertical: 18,
-        fontFamily: fonts.mono,
-        fontSize: 14,
-        letterSpacing: 1,
-        color: colors.ink,
-      }}
-      {...props}
-    />
   );
 }
