@@ -55,6 +55,13 @@ export default function AppHeader() {
               </Pressable>
             );
           })}
+          <Pressable
+            onPress={() => router.navigate('/search')}
+            hitSlop={8}
+            accessibilityLabel="Search users"
+            style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="search" size={22} color={colors.ink} />
+          </Pressable>
           <Bell count={unreadCount} onPress={() => router.navigate('/notifications')} />
         </View>
       </View>

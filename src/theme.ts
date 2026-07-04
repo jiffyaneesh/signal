@@ -2,28 +2,28 @@
 // High-Contrast Minimalism + Modern Brutalism. One lime accent per screen.
 
 export const colors = {
-  ink: '#1a1c1c', // on-background / borders / typography
-  signal: '#ccff00', // primary-container — the single lime accent
-  canvas: '#ffffff', // surface-container-lowest — primary white canvas
-  surface: '#f9f9f9', // background
-  surfaceContainer: '#eeeeee',
-  surfaceContainerHigh: '#e8e8e8',
-  surfaceContainerHighest: '#e2e2e2',
-  onSurfaceVariant: '#444933',
-  outlineVariant: '#c4c9ac',
-  error: '#ba1a1a',
-  errorContainer: '#ffdad6',
-  onErrorContainer: '#93000a',
-  white: '#ffffff',
+  ink: "#1a1c1c", // on-background / borders / typography
+  signal: "#ccff00", // primary-container — the single lime accent
+  canvas: "#ffffff", // surface-container-lowest — primary white canvas
+  surface: "#f9f9f9", // background
+  surfaceContainer: "#eeeeee",
+  surfaceContainerHigh: "#e8e8e8",
+  surfaceContainerHighest: "#e2e2e2",
+  onSurfaceVariant: "#444933",
+  outlineVariant: "#c4c9ac",
+  error: "#ba1a1a",
+  errorContainer: "#ffdad6",
+  onErrorContainer: "#93000a",
+  white: "#ffffff",
 };
 
 // Loaded font family keys (see useFonts in App.js)
 export const fonts = {
-  display: 'Bricolage_800ExtraBold', // oversized headlines
-  displayBold: 'Bricolage_700Bold',
-  body: 'Hanken_400Regular',
-  bodyMedium: 'Hanken_500Medium',
-  mono: 'JetBrainsMono_600SemiBold', // timestamps, labels, durations
+  display: "Bricolage_800ExtraBold", // oversized headlines
+  displayBold: "Bricolage_700Bold",
+  body: "Hanken_400Regular",
+  bodyMedium: "Hanken_500Medium",
+  mono: "JetBrainsMono_600SemiBold", // timestamps, labels, durations
 };
 
 export const radius = {
@@ -61,4 +61,4 @@ export const iosFocusShadow = {
 
 // The 6 allowed reaction emojis (per spec). `as const` so the element type is a
 // string-literal union (see ReactionEmoji in types.ts), not plain string.
-export const REACTION_EMOJIS = ['🔥', '💙', '🤝', '😂', '💀', '🤯'] as const;
+export const REACTION_EMOJIS = ["🔥", "💙", "🤝", "😂", "💀", "🤯"] as const;

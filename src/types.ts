@@ -124,6 +124,19 @@ export interface FollowPage {
 }
 
 // ─────────────────────────────────────────────────────────────
+// User search (see migration 0015_user_search.sql)
+// ─────────────────────────────────────────────────────────────
+
+// One result row in the user-search screen: the matched user plus whether the
+// *viewer* follows them (drives the inline follow control). No self row — the
+// search RPC excludes the caller server-side.
+export interface SearchUser {
+  id: string;
+  username: string;
+  isFollowing: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
 // Notifications (activity feed — see migration 0013_notifications.sql)
 // ─────────────────────────────────────────────────────────────
 
