@@ -131,24 +131,11 @@ export default function OnboardingScreen() {
 function SignupHeader() {
   return (
     <View style={{ gap: 28 }}>
-      <View
-        style={[
-          {
-            borderWidth: 2,
-            borderColor: colors.ink,
-            borderRadius: radius.lg,
-            backgroundColor: colors.canvas,
-            overflow: "hidden",
-          },
-          brutalistShadow,
-        ]}
-      >
-        <Image
-          source={SIGNUP_ILLUSTRATION}
-          resizeMode="cover"
-          style={{ width: "100%", aspectRatio: 677 / 369 }}
-        />
-      </View>
+      <Image
+        source={SIGNUP_ILLUSTRATION}
+        resizeMode="contain"
+        style={{ width: "80%", alignSelf: "center", aspectRatio: 677 / 369 }}
+      />
       <View style={{ gap: 12 }}>
         <Label muted>● NEW VOICE</Label>
         <Display style={{ fontSize: 52, lineHeight: 52 }}>JOIN THE{"\n"}SIGNAL</Display>
