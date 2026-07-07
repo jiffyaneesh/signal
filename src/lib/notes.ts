@@ -477,10 +477,16 @@ const REPLY_COLUMNS = 'id, audio_url, duration, created_at, user_id';
 export async function fetchRepliesPage({
   parentNoteId,
   after = null,
+  since = null,
   limit = REPLY_PAGE_SIZE,
 }: {
   parentNoteId: string;
   after?: string | null;
+  // Inclusive lower bound (>=). Used by realtime: an INSERT event carries the
+  // new row's created_at, and we must fetch that exact row to hydrate it with a
+  // signed URL + username. `after` (>) would exclude the row that fired the
+  // event, so the reply never appears until the thread is reopened.
+  since?: string | null;
   limit?: number;
 }): Promise<ReplyPage> {
   const size = Math.min(limit, REPLY_PAGE_SIZE);
@@ -494,6 +500,8 @@ export async function fetchRepliesPage({
     .limit(size);
   // Forward keyset: fetch replies newer than the last-seen cursor.
   if (after) query = query.gt('created_at', after);
+  // Inclusive fetch (realtime hydration) — includes the boundary row itself.
+  if (since) query = query.gte('created_at', since);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);

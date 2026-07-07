@@ -131,7 +131,9 @@ export default function ThreadScreen() {
           try {
             const page = await fetchRepliesPage({
               parentNoteId: noteId,
-              after: (payload.new as { created_at: string }).created_at,
+              // Inclusive: the payload's created_at IS the new reply's — an
+              // exclusive `after` would skip it, so it wouldn't appear live.
+              since: (payload.new as { created_at: string }).created_at,
             });
             setReplies((prev) => {
               const existingIds = new Set(prev.map((r) => r.id));

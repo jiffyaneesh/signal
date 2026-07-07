@@ -54,8 +54,14 @@ export default function ReplyRecordScreen() {
         durationSec: recordedDuration || 1,
         parentNoteId,
       });
-      // Navigate back to the thread; realtime will surface the new reply.
-      router.replace(`/thread/${parentNoteId}`);
+      // Dismiss this modal to reveal the ThreadScreen already mounted beneath
+      // it; its live realtime channel surfaces the new reply. Using
+      // router.replace here would mount a SECOND ThreadScreen on top of the
+      // existing one — two instances open a duplicate
+      // supabase.channel(`thread:${id}`) with the same topic on the same
+      // client, which crashes realtime (same failure class as the merge-
+      // channels fix). router.back() keeps a single ThreadScreen + one channel.
+      router.back();
     } catch (e: unknown) {
       setPostError(e instanceof Error ? e.message : 'Failed to post reply.');
     } finally {

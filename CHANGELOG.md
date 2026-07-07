@@ -11,6 +11,16 @@ All notable changes to this project are documented here.
   parent thread.
 
 ### Fixed
+- **Crash after posting a reply**: `ReplyRecordScreen` posted then called
+  `router.replace('/thread/[id]')`, mounting a *second* `ThreadScreen` on top of
+  the one already beneath the modal. Two instances opened a duplicate
+  `supabase.channel('thread:<id>')` on the same client, crashing realtime. Now
+  calls `router.back()` to dismiss the modal and reveal the existing thread.
+- **New reply not appearing live**: the ThreadScreen realtime INSERT handler
+  re-fetched with an exclusive `after` cursor (`>`), which skipped the very row
+  that fired the event — so a posted reply only showed after reopening the
+  thread. `fetchRepliesPage` now accepts an inclusive `since` (`>=`) bound used
+  for realtime hydration.
 - **Stats overcounting**: `user_note_stats` RPC now counts only top-level
   broadcasts (`parent_note_id IS NULL`), so the NOTES stat card matches the
   actual list length. Previously, voice replies were inflating the count.
