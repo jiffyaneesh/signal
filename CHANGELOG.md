@@ -38,6 +38,14 @@ All notable changes to this project are documented here.
   order-independence of the conversation pair key.
 
 ### Fixed
+- **Audio resume point clobbered by a quick switch**: `ActiveAudioPlayer` saved
+  the live offset on unmount, but a switch before playback advanced saved 0 —
+  wiping a real saved position. Now keeps `initialPosition` when playback never
+  advanced.
+- **Notifications screen blanked on a partial fetch failure**: the initial load
+  used `Promise.all`, so a failed unread-count query threw away the notification
+  list too. Switched to `Promise.allSettled` — the list renders even if the
+  badge count fails, and vice versa.
 - **Following feed missed first-time posters live**: the realtime INSERT handler
   gated on "do we already show a note from this author?", which silently dropped
   a followed user's *first* note until a manual refresh. Now gates on the live

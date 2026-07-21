@@ -41,14 +41,21 @@ export function useNotifications() {
       else setLoading(true);
       setError(null);
       try {
-        const [{ items: page, nextCursor, hasMore: more }, unread] = await Promise.all([
+        // Degrade independently: the list is the primary payload, the unread
+        // count is a nice-to-have badge. allSettled so a failed count query
+        // doesn't blank the whole screen (and vice versa).
+        const [pageRes, unreadRes] = await Promise.allSettled([
           fetchNotificationsPage({ viewerId: user.id }),
           fetchUnreadCount(user.id),
         ]);
-        setItems(page);
-        setUnreadCount(unread);
-        cursorRef.current = nextCursor;
-        setHasMore(more);
+        if (pageRes.status === 'fulfilled') {
+          setItems(pageRes.value.items);
+          cursorRef.current = pageRes.value.nextCursor;
+          setHasMore(pageRes.value.hasMore);
+        } else {
+          throw pageRes.reason;
+        }
+        if (unreadRes.status === 'fulfilled') setUnreadCount(unreadRes.value);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : String(e));
         if (!isRefresh) setItems([]);

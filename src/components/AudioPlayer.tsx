@@ -117,7 +117,11 @@ function ActiveAudioPlayer({
   const saveRef = useRef(onSavePosition);
   saveRef.current = onSavePosition;
   const finalPosRef = useRef(0);
-  finalPosRef.current = finished ? 0 : currentTime;
+  // finished → 0 (replay from top). Otherwise the live offset — but if playback
+  // never advanced (currentTime still 0, e.g. the user switched away before the
+  // seek/auto-play kicked in) keep initialPosition so a quick switch doesn't
+  // clobber a real saved resume point with 0.
+  finalPosRef.current = finished ? 0 : currentTime > 0 ? currentTime : initialPosition;
   useEffect(() => {
     return () => saveRef.current?.(finalPosRef.current);
   }, []);
