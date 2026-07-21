@@ -28,6 +28,15 @@ All notable changes to this project are documented here.
     with a spring, and floats a ghost copy of the emoji up-and-out when the tap
     selects (not deselects) the reaction.
 
+### Changed
+- **Deduplicated audio-storage helpers**: `uriToArrayBuffer` /
+  `storagePathFromUrl` / `signAudioUrls` were copy-pasted in `notes.ts` and
+  `messages.ts`; extracted to a shared `src/lib/audioStorage.ts`.
+- **Deduplicated pure helpers + first tests**: `formatDuration` (defined twice)
+  and `canonicalPair` moved to `src/lib/format.ts`, with a `node:test` unit
+  suite (`npm test`, Node 24 native TS). Covers the m:ss >59s case and
+  order-independence of the conversation pair key.
+
 ### Fixed
 - **Following feed missed first-time posters live**: the realtime INSERT handler
   gated on "do we already show a note from this author?", which silently dropped

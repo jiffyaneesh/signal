@@ -10,6 +10,7 @@ import { timeAgo } from '../components/VoiceNoteCard';
 import { useAuth } from '../context/AuthContext';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useWindowedPlayback } from '../hooks/useWindowedPlayback';
+import { formatDuration } from '../lib/format';
 import {
   deleteConversation,
   fetchConversationMeta,
@@ -278,15 +279,6 @@ export default function ChatScreen() {
       />
     </SafeAreaView>
   );
-}
-
-// Format a clip length (seconds) as m:ss. Handles >59s correctly rather than
-// hardcoding the minute to 0 (clips are capped at 30s today, but be safe).
-function formatDuration(totalSec: number): string {
-  const s = Math.max(0, Math.floor(totalSec));
-  const m = Math.floor(s / 60);
-  const rem = s % 60;
-  return `${m}:${rem < 10 ? '0' : ''}${rem}`;
 }
 
 // ── Message bubble ──────────────────────────────────────────────────────────

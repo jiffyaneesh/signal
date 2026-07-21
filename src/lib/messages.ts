@@ -1,71 +1,17 @@
+import { signAudioUrls, uriToArrayBuffer } from './audioStorage';
+import { canonicalPair } from './format';
 import { supabase, VOICE_NOTES_BUCKET } from './supabase';
 import type { Conversation, DirectMessage, MessagePage } from '../types';
 
 // ─────────────────────────────────────────────────────────────
 // Direct voice messages (1:1 audio DM — see migration 0019)
 //
-// Storage/signing mirrors notes.ts: clips live in the same `voice-notes`
-// bucket under the sender's uid folder, and playback URLs are signed in a
-// batch. The helpers below (uriToArrayBuffer / storagePathFromUrl /
-// signAudioUrls) are re-declared locally rather than exported from notes.ts to
-// keep the two data modules independent.
+// Storage/signing lives in ./audioStorage (shared with notes.ts): clips live in
+// the same `voice-notes` bucket under the sender's uid folder, and playback
+// URLs are signed in a batch.
 // ─────────────────────────────────────────────────────────────
 
 const MESSAGE_PAGE_SIZE = 20;
-
-// Read a local file uri into an ArrayBuffer for upload (RN-friendly).
-async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
-  const res = await fetch(uri);
-  if (!res.ok) throw new Error('Could not read the recorded audio file.');
-  return await res.arrayBuffer();
-}
-
-// Extract the storage object path from a public/absolute audio URL (or pass a
-// relative path straight through). Same logic as notes.ts.
-function storagePathFromUrl(audioUrl: string | null): string | null {
-  if (!audioUrl) return null;
-  const marker = `/${VOICE_NOTES_BUCKET}/`;
-  const i = audioUrl.indexOf(marker);
-  if (i !== -1) return decodeURIComponent(audioUrl.slice(i + marker.length));
-  if (!audioUrl.startsWith('http')) return audioUrl;
-  return null;
-}
-
-// Batch-sign a list of rows' audio_url for immediate playback. Best-effort:
-// on failure the rows are returned with their original URLs.
-async function signAudioUrls<T extends { audio_url: string }>(rows: T[]): Promise<T[]> {
-  if (!rows.length) return rows;
-  const paths = rows.map((r) => storagePathFromUrl(r.audio_url)).filter((p): p is string => !!p);
-  if (!paths.length) return rows;
-
-  try {
-    const { data, error } = await supabase.storage
-      .from(VOICE_NOTES_BUCKET)
-      .createSignedUrls(paths, 3600);
-    if (error) {
-      console.warn('Failed to sign message URLs:', error.message);
-      return rows;
-    }
-    const byPath: Record<string, string> = {};
-    for (const item of data ?? []) {
-      if (item.signedUrl && item.path) byPath[item.path] = item.signedUrl;
-    }
-    return rows.map((r) => {
-      const path = storagePathFromUrl(r.audio_url);
-      return path && byPath[path] ? { ...r, audio_url: byPath[path] } : r;
-    });
-  } catch (err) {
-    console.error('Error signing message URLs:', err);
-    return rows;
-  }
-}
-
-// Canonical pair ordering: conversations store user_a < user_b so a pair maps
-// to exactly one row (see migration 0019). Mirror it client-side so
-// getOrCreateConversation looks up / inserts the same row from either side.
-function canonicalPair(u1: string, u2: string): { user_a: string; user_b: string } {
-  return u1 < u2 ? { user_a: u1, user_b: u2 } : { user_a: u2, user_b: u1 };
-}
 
 // ─────────────────────────────────────────────────────────────
 // Inbox: all conversations involving the viewer, newest activity first.

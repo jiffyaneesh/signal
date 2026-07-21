@@ -1,3 +1,4 @@
+import { signAudioUrls, storagePathFromUrl, uriToArrayBuffer } from './audioStorage';
 import { fetchBlockedIds } from './moderation';
 import { fetchFollowingIds } from './social';
 import { supabase, VOICE_NOTES_BUCKET } from './supabase';
@@ -15,13 +16,6 @@ import type {
   VoiceNoteRow,
   VoiceReply,
 } from '../types';
-
-// Read a local file uri into an ArrayBuffer for upload (RN-friendly).
-async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
-  const res = await fetch(uri);
-  if (!res.ok) throw new Error('Could not read the recorded audio file.');
-  return await res.arrayBuffer();
-}
 
 // Upload audio to Storage, then insert the voice_note row. The note is now
 // public — every authenticated user sees it in the global feed (no per-user
@@ -242,57 +236,6 @@ export async function toggleReaction({
     );
   if (error) throw new Error(error.message);
   return emoji;
-}
-
-// Derive the Storage object path from a public audio URL.
-// `.../object/public/voice-notes/<uid>/<file>` → `<uid>/<file>`.
-function storagePathFromUrl(audioUrl: string | null): string | null {
-  if (!audioUrl) return null;
-  const marker = `/${VOICE_NOTES_BUCKET}/`;
-  const i = audioUrl.indexOf(marker);
-  if (i !== -1) {
-    return decodeURIComponent(audioUrl.slice(i + marker.length));
-  }
-  // Support relative storage paths directly.
-  if (!audioUrl.startsWith('http')) {
-    return audioUrl;
-  }
-  return null;
-}
-
-// Generate signed URLs in a batch for better performance.
-async function signAudioUrls<T extends { audio_url: string | null }>(notes: T[]): Promise<T[]> {
-  if (!notes.length) return notes;
-  const paths = notes.map((n) => storagePathFromUrl(n.audio_url)).filter((p): p is string => !!p);
-  if (!paths.length) return notes;
-
-  try {
-    const { data, error } = await supabase.storage
-      .from(VOICE_NOTES_BUCKET)
-      .createSignedUrls(paths, 3600);
-    if (error) {
-      console.warn('Failed to create signed URLs:', error.message);
-      return notes;
-    }
-
-    const signedUrlByPath: Record<string, string> = {};
-    for (const item of data ?? []) {
-      if (item.signedUrl && item.path) {
-        signedUrlByPath[item.path] = item.signedUrl;
-      }
-    }
-
-    return notes.map((n) => {
-      const path = storagePathFromUrl(n.audio_url);
-      if (path && signedUrlByPath[path]) {
-        return { ...n, audio_url: signedUrlByPath[path] };
-      }
-      return n;
-    });
-  } catch (err) {
-    console.error('Error signing audio URLs:', err);
-    return notes;
-  }
 }
 
 // Hard-delete a note: removes the DB row (reactions cascade via FK) and the

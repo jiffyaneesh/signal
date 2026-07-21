@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { formatDuration } from '../lib/format';
 import { brutalistShadow, colors, radius, REACTION_EMOJIS } from '../theme';
 import type { ReactionCounts, ReactionEmoji } from '../types';
 import AudioPlayer from './AudioPlayer';
@@ -322,11 +323,3 @@ function ReactionPill({
   );
 }
 
-// Format a clip length (seconds) as m:ss — handles durations over 59s rather
-// than hardcoding the minute to 0.
-function formatDuration(sec: number) {
-  const total = Math.max(0, Math.floor(sec));
-  const m = Math.floor(total / 60);
-  const rem = total % 60;
-  return `${m}:${rem < 10 ? '0' : ''}${rem}`;
-}
