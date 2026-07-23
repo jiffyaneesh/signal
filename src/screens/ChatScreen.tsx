@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,12 +20,23 @@ import {
   uploadAndSendMessage,
 } from '../lib/messages';
 import { supabase } from '../lib/supabase';
-import { colors, radius, space } from '../theme';
+import { colors, iosFocusShadow, radius, space } from '../theme';
 import type { DirectMessage } from '../types';
 
 // Module-level monotonic topic seq — a fast remount must not reuse a topic
 // (see useUnreadBadge / MessagesScreen for the same guard).
 let chatSeq = 0;
+
+// Day label for a chat separator: TODAY / YESTERDAY / an absolute date.
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (days <= 0) return 'TODAY';
+  if (days === 1) return 'YESTERDAY';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase();
+}
 
 // 1:1 voice chat. Messages render newest-at-bottom via an inverted FlatList
 // (state holds them newest-first). Scrolling up (onEndReached, inverted) pages
@@ -45,6 +57,10 @@ export default function ChatScreen() {
   const inFlight = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false); // delete-thread modal
   const [deleting, setDeleting] = useState(false);
+  const listRef = useRef<FlatList<DirectMessage>>(null);
+  // Show a "jump to newest" pill once the user scrolls up past a message or two
+  // (inverted list → offset grows as you scroll into older history).
+  const [showJump, setShowJump] = useState(false);
 
   const { playingNoteId, activate, savePosition, getInitialPosition, handleFinish } =
     useWindowedPlayback();
@@ -218,12 +234,24 @@ export default function ChatScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={messages}
           inverted
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: space.containerPadding, gap: space.elementGap }}
           onEndReached={loadOlder}
           onEndReachedThreshold={0.4}
+          onScroll={(e) => {
+            // Inverted: offset 0 == newest at the bottom. Reveal the jump pill
+            // once the user has scrolled a screenful up into history.
+            const y = e.nativeEvent.contentOffset.y;
+            setShowJump((prev) => (prev !== y > 240 ? y > 240 : prev));
+          }}
+          scrollEventThrottle={64}
+          removeClippedSubviews
+          initialNumToRender={12}
+          maxToRenderPerBatch={10}
+          windowSize={11}
           ListFooterComponent={
             loadingMore ? (
               <View style={{ paddingVertical: 16 }}>
@@ -236,17 +264,54 @@ export default function ChatScreen() {
               <Label muted>SAY SOMETHING. HOLD TO RECORD.</Label>
             </View>
           }
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              active={item.id === playingNoteId}
-              onActivate={() => activate(item.id)}
-              initialPosition={getInitialPosition(item.id)}
-              onSavePosition={(s) => savePosition(item.id, s)}
-              onFinish={() => handleFinish(item.id)}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            // Inverted, newest-first array: the older neighbour is the NEXT
+            // index. Show a day separator above this bubble when the day flips
+            // (or at the very top of history).
+            const older = messages[index + 1];
+            const showDay = !older || dayLabel(older.createdAt) !== dayLabel(item.createdAt);
+            return (
+              <View style={{ gap: space.elementGap }}>
+                <MessageBubble
+                  message={item}
+                  active={item.id === playingNoteId}
+                  onActivate={activate}
+                  initialPosition={getInitialPosition(item.id)}
+                  onSavePosition={savePosition}
+                  onFinish={handleFinish}
+                />
+                {showDay && <DaySeparator label={dayLabel(item.createdAt)} />}
+              </View>
+            );
+          }}
         />
+      )}
+
+      {/* Jump-to-newest pill — only while scrolled up. */}
+      {showJump && !loading && (
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            listRef.current?.scrollToOffset({ offset: 0, animated: true });
+          }}
+          style={({ pressed }) => ({
+            position: 'absolute',
+            right: 20,
+            bottom: 140,
+            width: 48,
+            height: 48,
+            borderRadius: radius.full,
+            borderWidth: 2,
+            borderColor: colors.ink,
+            backgroundColor: colors.signal,
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: pressed ? [{ translateX: 1 }, { translateY: 1 }] : [],
+            ...iosFocusShadow,
+          })}
+          accessibilityLabel="Jump to newest">
+          <Label style={{ fontSize: 18 }}>↓</Label>
+        </Pressable>
       )}
 
       {/* Inline voice compose bar. */}
@@ -281,10 +346,25 @@ export default function ChatScreen() {
   );
 }
 
+// ── Day separator ───────────────────────────────────────────────────────────
+// A centered mono-caps label with hairlines either side, marking a date change
+// in the chat log.
+function DaySeparator({ label }: { label: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flex: 1, height: 2, backgroundColor: colors.outlineVariant }} />
+      <Label muted style={{ fontSize: 10 }}>{label}</Label>
+      <View style={{ flex: 1, height: 2, backgroundColor: colors.outlineVariant }} />
+    </View>
+  );
+}
+
 // ── Message bubble ──────────────────────────────────────────────────────────
 // Own messages align right with a lime accent; incoming align left. Each is a
-// windowed AudioPlayer so only one clip holds native audio at a time.
-function MessageBubble({
+// windowed AudioPlayer so only one clip holds native audio at a time. Memoized
+// (callbacks take the message id so their identity is stable across renders) —
+// a realtime read-receipt patch re-renders only the bubble that changed.
+const MessageBubble = memo(function MessageBubble({
   message,
   active,
   onActivate,
@@ -294,10 +374,10 @@ function MessageBubble({
 }: {
   message: DirectMessage;
   active: boolean;
-  onActivate: () => void;
+  onActivate: (id: string) => void;
   initialPosition: number;
-  onSavePosition: (s: number) => void;
-  onFinish: () => void;
+  onSavePosition: (id: string, s: number) => void;
+  onFinish: (id: string) => void;
 }) {
   const mine = message.mine;
   return (
@@ -318,10 +398,10 @@ function MessageBubble({
           bars={22}
           height={44}
           active={active}
-          onActivate={onActivate}
+          onActivate={() => onActivate(message.id)}
           initialPosition={initialPosition}
-          onSavePosition={onSavePosition}
-          onFinish={onFinish}
+          onSavePosition={(s) => onSavePosition(message.id, s)}
+          onFinish={() => onFinish(message.id)}
         />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Label muted style={{ fontSize: 9 }}>
@@ -338,7 +418,7 @@ function MessageBubble({
       </View>
     </View>
   );
-}
+});
 
 // ── Composer ──────────────────────────────────────────────────────────────
 // Voice-only compose: idle → recording → preview → send. Mirrors
@@ -355,6 +435,7 @@ function Composer({ onSend }: { onSend: (uri: string, durationSec: number) => Pr
 
   async function toggleRecord() {
     setSendError(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     if (isRecording) {
       const uri = await rec.stop();
       setRecordedDuration(rec.durationSec);
@@ -376,6 +457,7 @@ function Composer({ onSend }: { onSend: (uri: string, durationSec: number) => Pr
     setSendError(null);
     try {
       await onSend(recordedUri, recordedDuration || 1);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       discard();
     } catch (e: unknown) {
       setSendError(e instanceof Error ? e.message : 'Could not send.');

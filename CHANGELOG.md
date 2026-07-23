@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 ## [Unreleased]
 
 ### Changed
+- **Messaging & activity screens — richer, faster, more interactive**:
+  - **Activity**: added type filter tabs (All / Reactions / Follows / Replies), a per-type icon badge on each actor monogram, the reaction emoji shown large on reaction rows, a live unread count in the header, and selection haptics on tap.
+  - **Inbox**: long-press a thread to delete it (confirm modal, optimistic removal), a total-unread count in the header, a lime left rail on unread threads, and selection/impact haptics.
+  - **Chat**: day separators (TODAY / YESTERDAY / date) between message groups, a floating "jump to newest" pill while scrolled up, and haptics on record toggle + successful send.
+  - **Perf**: all three lists now use `removeClippedSubviews` + tuned `initialNumToRender`/`maxToRenderPerBatch`/`windowSize`, and the row/bubble components are memoized with stable id-based callbacks so realtime refetches and read-receipt patches only re-render what changed.
+
+### Changed (earlier)
 - **Bottom tab navigation**: replaced the in-header FEED / NOTES / ME route switcher with an Expo Router bottom tab group (`app/(tabs)/`). Navigation now uses a custom `BrutalTabBar` — a neo-brutalist floating pill bar detached from all screen edges (bottom/left/right margins), with rounded corners, a 2px ink border, and the solid offset shadow. The lime pill slides smoothly between tabs (Reanimated `withTiming` on the measured slot's x/width) and each active tab's text label morphs in from the icon (animated width + opacity). `AppHeader` keeps only the wordmark and utility icons (search/messages/activity). Route URLs (`/feed`, `/my-notes`, `/profile`) are unchanged.
 
 ### Added
